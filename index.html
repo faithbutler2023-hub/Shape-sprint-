@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Shape Sprint</title>
+<style>
+:root{--ink:#202536;--muted:#657084;--bg:#f4f6fb;--card:#fff;--accent:#6657d9;--pale:#e8e5ff}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}main{max-width:740px;margin:auto;padding:20px 14px 42px}.brand{font-size:.8rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}.panel{background:var(--card);border:1px solid #e2e6ef;border-radius:20px;padding:clamp(18px,4vw,30px);margin-top:14px;box-shadow:0 8px 28px #2025360b}h1{font-size:clamp(1.8rem,5vw,2.6rem);line-height:1.1;margin:.4rem 0}h2{margin:.1rem 0 .6rem}p{color:var(--muted)}button,input{font:inherit}button{border:0;border-radius:12px;padding:14px 18px;background:var(--accent);color:#fff;font-weight:700;cursor:pointer;min-height:48px}.secondary{background:var(--pale);color:var(--ink)}.wide{width:100%;margin-top:16px}.field{display:flex;flex-direction:column;gap:6px;margin-top:14px}.field input{border:1px solid #ccd3e0;border-radius:10px;padding:12px;width:100%}.notice{border-radius:12px;background:#f1f0ff;padding:14px;color:#39316f}.small{font-size:.9rem}.hidden{display:none!important}.topline{display:flex;justify-content:space-between;gap:12px;color:var(--muted);font-size:.9rem}.progress{height:8px;background:#e8ebf3;border-radius:99px;overflow:hidden;margin:12px 0 24px}.bar{height:100%;width:0;background:var(--accent)}.stimulus{height:160px;display:flex;align-items:center;justify-content:center;margin:8px 0}.shape{width:90px;height:90px;background:#6657d9}.circle{border-radius:50%}.triangle{width:0;height:0;background:transparent;border-left:52px solid transparent;border-right:52px solid transparent;border-bottom:90px solid #e38b3b}.diamond{transform:rotate(45deg);width:66px;height:66px;background:#159a8c}.star{background:#d94c73;clip-path:polygon(50% 0%,61% 35%,98% 35%,68% 57%,79% 93%,50% 71%,21% 93%,32% 57%,2% 35%,39% 35%)}.choices{display:grid;grid-template-columns:1fr 1fr;gap:12px}.choices button{min-height:60px}.feedback{text-align:center;min-height:24px;font-weight:700}.foot{font-size:.78rem;color:var(--muted);margin-top:18px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.metric{background:#f5f6fb;border-radius:12px;padding:14px}.metric strong{display:block;font-size:1.35rem}@media(max-width:420px){.choices button{padding:12px 7px}.stimulus{height:140px}.shape{width:78px;height:78px}.triangle{border-left-width:45px;border-right-width:45px;border-bottom-width:78px}}
+</style></head>
+<body><main>
+<div class="brand">A short visual challenge</div>
+<section class="panel" id="intro">
+<h1>Shape Sprint</h1>
+<p>Complete a quick visual matching challenge. Remember the target shape, then decide whether each shape shown matches it.</p>
+<div class="notice small"><b>How to play</b><br>Choose MATCH if the shape is the same as the target, or NO MATCH if it is different. Respond as accurately and quickly as you comfortably can.</div>
+<p class="small">Your participant code will be created automatically. You do not need to enter one.</p>
+<button class="wide" id="start">Start round</button>
+<p class="foot">Use the same device and browser for both rounds. Do not clear browser data between rounds.</p>
+</section>
+<section class="panel hidden" id="game">
+<div class="topline"><span id="roundlabel">Round</span><span id="countlabel">Item 1</span></div><div class="progress"><div class="bar" id="bar"></div></div>
+<p style="text-align:center;margin-bottom:0">Target shape</p><div class="stimulus" id="target"></div>
+<p style="text-align:center;margin:0">Does this shape match the target?</p><div class="stimulus" id="current"></div>
+<div class="choices"><button id="match">✓ MATCH</button><button class="secondary" id="nomatch">✕ NO MATCH</button></div><div class="feedback" id="feedback" aria-live="polite"></div>
+<p class="foot">Computer shortcut: F = MATCH; J = NO MATCH.</p>
+</section>
+<section class="panel hidden" id="return">
+<h2>Round 1 complete</h2><p>Your first round is complete. Return to the survey and follow its instructions. SurveyMonkey will assign your next-round instructions.</p>
+<div class="notice small">Keep using the same browser and device. Your baseline results are saved in this browser and submitted to the research data destination so the second round can be matched to them.</div>
+<p id="uploadstatus" class="small" aria-live="polite"></p>
+<button class="wide" id="backsurvey">Return to SurveyMonkey</button>
+<p class="foot">The researcher must configure the return link before the study is launched.</p>
+</section>
+<section class="panel hidden" id="condition">
+<h2 id="conditiontitle">Round 2</h2><p id="conditiontext"></p><div class="notice small">The matching rules stay the same. Keep trying to respond accurately and quickly.</div>
+<button class="wide" id="begin2">Start Round 2</button>
+</section>
+<section class="panel hidden" id="done">
+<h2>Challenge complete!</h2><p>Thank you. The results below are for checking the prototype.</p><div class="grid" id="results"></div><p id="uploadstatus2" class="small" aria-live="polite"></p>
+<div class="notice small"><b>Researcher note:</b> This prototype now submits each completed round to DataPipe. Before recruiting participants, test with a unique test participant code and confirm the two CSV files appear in the storage connected to your DataPipe experiment.</div>
+<button class="wide" id="backsurvey2">Return to SurveyMonkey</button><button class="wide secondary" id="download">Download response data (.csv)</button>
+</section>
+</main>
+<script>
+(()=>{
+const $=id=>document.getElementById(id), screens=['intro','game','return','condition','done'];
+const params=new URLSearchParams(location.search);
+const phase=params.get('phase')||'standalone';
+const urlPid=params.get('pid')||'';
+const conditionParam=params.get('condition')||'';
+const returnUrl=params.get('return')||'https://www.surveymonkey.com/share/b4745a4c-9641-4f71-afcc-4fb910d3f9b5';
+const shapes=['circle','square','triangle','diamond','star'];
+const colors={circle:'#6657d9',square:'#159a8c',triangle:'#e38b3b',diamond:'#159a8c',star:'#d94c73'};
+const KEY='shapeSprintStudyData_v2';
+const PIDKEY='shapeSprintParticipantId_v1';
+let pid='',condition='',round=1,items=[],idx=0,rows=[],targetShape='',shownAt=0,accepting=false;
+function getOrCreateParticipantId(){
+  try{let existing=localStorage.getItem(PIDKEY);if(existing)return existing;
+    const fresh='SS-'+Math.random().toString(36).slice(2,8).toUpperCase()+'-'+Date.now().toString(36).slice(-4).toUpperCase();
+    localStorage.setItem(PIDKEY,fresh);return fresh;
+  }catch(e){return 'SS-'+Math.random().toString(36).slice(2,10).toUpperCase()}
+}
+const total=24;
+function show(s){screens.forEach(x=>$(x).classList.toggle('hidden',x!==s))}
+function shape(type,el){el.innerHTML='';const d=document.createElement('div');d.className='shape '+type;if(type==='square')d.style.borderRadius='12px';if(type==='circle')d.style.borderRadius='50%';if(type==='diamond')d.style.transform='rotate(45deg)';if(type==='triangle')d.style.borderBottomColor=colors[type];else d.style.background=colors[type]||'#6657d9';el.appendChild(d)}
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+function makeItems(){let a=[];for(let i=0;i<total;i++){const m=i%2===0;a.push({shape:m?targetShape:shapes.filter(s=>s!==targetShape)[Math.floor(Math.random()*(shapes.length-1))],correct:m?'match':'nomatch'})}return shuffle(a)}
+function save(){try{localStorage.setItem(KEY,JSON.stringify({participant_id:pid,condition:condition,rows:rows}))}catch(e){}}
+function load(){try{const x=JSON.parse(localStorage.getItem(KEY)||'null');if(x&&x.participant_id===pid)return x;return null}catch(e){return null}}
+function startRound(n){round=n;idx=0;items=makeItems();$('roundlabel').textContent='Round '+n;$('countlabel').textContent='Item 1 of '+total;shape(targetShape,$('target'));$('bar').style.width='0%';show('game');next()}
+function next(){if(idx>=items.length){finishRound();return}accepting=false;$('countlabel').textContent=`Item ${idx+1} of ${total}`;$('bar').style.width=(idx/total*100)+'%';shape(items[idx].shape,$('current'));$('feedback').textContent='';$('match').disabled=false;$('nomatch').disabled=false;setTimeout(()=>{shownAt=performance.now();accepting=true},120)}
+function answer(response){if(!accepting||idx>=items.length)return;accepting=false;const rt=Math.round(performance.now()-shownAt),it=items[idx],ok=response===it.correct;rows.push({participant_id:pid,condition:round===1?'baseline':condition,trial:round,item_number:idx+1,target_shape:targetShape,shown_shape:it.shape,response:response,correct:ok?1:0,error:ok?0:1,reaction_time_ms:rt});$('feedback').textContent=ok?'Nice!':'Next one';$('feedback').style.color=ok?'#18794e':'#b42318';$('match').disabled=true;$('nomatch').disabled=true;idx++;setTimeout(next,170)}
+function csvForRows(dataRows){const cols=['participant_id','condition','round','item_number','target_shape','shown_shape','response','correct','error','reaction_time_ms'];return [cols.join(','),...dataRows.map(r=>cols.map(k=>{const v=k==='round'?r.trial:r[k];return '"'+String(v??'').replace(/"/g,'""')+'"'}).join(','))].join('\r\n')}
+function safeFilePart(value){return String(value).replace(/[^a-z0-9_-]/gi,'_').slice(0,50)||'participant'}
+async function sendRoundToDataPipe(roundNumber){
+  const roundRows=rows.filter(r=>r.trial===roundNumber);
+  if(!roundRows.length) throw new Error('No rows found for this round.');
+  const filename='shape_sprint_'+safeFilePart(pid)+'_round'+roundNumber+'.csv';
+  const response=await fetch('https://pipe.jspsych.org/api/data/',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({experimentID:'lHEA3ed5JkQd',filename,data:csvForRows(roundRows)})});
+  let result={};try{result=await response.json()}catch(e){}
+  if(!response.ok) throw new Error(result.error||('DataPipe returned status '+response.status));
+  return result;
+}
+async function finishRound(){
+  $('bar').style.width='100%';save();
+  const statusId=round===1?'uploadstatus':'uploadstatus2';
+  const statusEl=$(statusId); if(statusEl) statusEl.textContent='Saving your results…';
+  try{
+    await sendRoundToDataPipe(round);
+    if(statusEl) statusEl.textContent='Your round is complete.';
+  }catch(err){
+    if(statusEl) statusEl.textContent='We could not confirm that your results were sent. Please tell the researcher before continuing.';
+    alert('The game could not confirm that this round was saved to the study. Your results remain saved in this browser. Please contact the researcher before continuing.');
+  }
+  if(round===1){show('return')}else{render();show('done')}
+}
+function render(){const out=[];for(let n=1;n<=2;n++){const a=rows.filter(r=>r.trial===n);if(!a.length)continue;const c=a.reduce((s,r)=>s+r.correct,0),rt=Math.round(a.reduce((s,r)=>s+r.reaction_time_ms,0)/a.length);out.push(`<div class="metric"><span class="small">Round ${n} correct</span><strong>${c}/${a.length}</strong></div><div class="metric"><span class="small">Round ${n} mean RT</span><strong>${rt} ms</strong></div>`)}$('results').innerHTML=out.join('')}
+function csv(){const cols=['participant_id','condition','trial','item_number','target_shape','shown_shape','response','correct','error','reaction_time_ms'];const content=[cols.join(','),...rows.map(r=>cols.map(k=>'"'+String(r[k]??'').replace(/"/g,'""')+'"').join(','))].join('\\r\\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([content],{type:'text/csv;charset=utf-8;'}));a.download='shape_sprint_'+pid.replace(/[^a-z0-9_-]/gi,'_')+'.csv';a.click();URL.revokeObjectURL(a.href)}
+$('start').addEventListener('click',()=>{pid=(urlPid||getOrCreateParticipantId());if(phase==='2'){ const prior=load();if(!prior||!prior.rows.some(r=>r.trial===1)){alert('Baseline round was not found in this browser. Please return to the survey and use the same device and browser.');return}rows=prior.rows;condition=conditionParam;if(!['winning','losing'].includes(condition)){alert('The survey link did not include a valid condition. Please contact the researcher.');return}$('conditiontitle').textContent='Your next challenge';$('conditiontext').textContent=condition==='winning'?'The feedback for this round indicates that you are currently winning. Keep trying to respond accurately and quickly.':'The feedback for this round indicates that you are currently losing. Keep trying to respond accurately and quickly.';show('condition');return}
+condition='';rows=[];targetShape=shapes[Math.floor(Math.random()*shapes.length)];startRound(1)});
+$('match').addEventListener('click',()=>answer('match'));$('nomatch').addEventListener('click',()=>answer('nomatch'));
+document.addEventListener('keydown',e=>{if($('game').classList.contains('hidden'))return;if(e.key.toLowerCase()==='f')answer('match');if(e.key.toLowerCase()==='j')answer('nomatch')});
+function returnToSurvey(){if(returnUrl){try{const u=new URL(returnUrl);u.searchParams.set('participant_id',pid);u.searchParams.set('pid',pid);location.href=u.toString()}catch(e){alert('The SurveyMonkey return URL is not valid. Please contact the researcher.')}}else{alert('Add your SurveyMonkey return URL to the game link before launching the study. You can return to the survey using your browser tab.')}}
+ $('backsurvey').addEventListener('click',returnToSurvey);
+ $('backsurvey2').addEventListener('click',returnToSurvey);
+$('begin2').addEventListener('click',()=>{targetShape=shapes[Math.floor(Math.random()*shapes.length)];startRound(2)});
+$('download').addEventListener('click',csv);
+if(phase==='2'){ $('start').textContent='Continue to Round 2';$('intro').querySelector('h1').textContent='Shape Sprint — Round 2';$('intro').querySelector('p').textContent='Continue the visual matching challenge using the instructions provided by the survey.'}
+})();
+</script></body></html>
